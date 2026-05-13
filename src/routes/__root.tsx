@@ -8,6 +8,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
+import { Toaster } from "@/components/ui/sonner";
+
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -72,11 +74,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "BerryFlow — Visual builder for WhatsApp by BerrySDK" },
+      { name: "description", content: "Monte automações conversacionais e fluxos OTP no WhatsApp com BerryFlow." },
+      { name: "author", content: "BerrySDK" },
+      { property: "og:title", content: "BerryFlow — Visual builder for WhatsApp" },
+      { property: "og:description", content: "Construtor visual de fluxos para BerryProtocol e BerryOTP." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -114,6 +116,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <Toaster theme="dark" richColors position="top-right" />
     </QueryClientProvider>
   );
 }

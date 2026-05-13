@@ -9,38 +9,181 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TemplatesRouteImport } from './routes/templates'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SessionsRouteImport } from './routes/sessions'
+import { Route as OtpRouteImport } from './routes/otp'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FlowsIndexRouteImport } from './routes/flows.index'
+import { Route as FlowsNewRouteImport } from './routes/flows.new'
+import { Route as FlowsIdRouteImport } from './routes/flows.$id'
 
+const TemplatesRoute = TemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessionsRoute = SessionsRouteImport.update({
+  id: '/sessions',
+  path: '/sessions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OtpRoute = OtpRouteImport.update({
+  id: '/otp',
+  path: '/otp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FlowsIndexRoute = FlowsIndexRouteImport.update({
+  id: '/flows/',
+  path: '/flows/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FlowsNewRoute = FlowsNewRouteImport.update({
+  id: '/flows/new',
+  path: '/flows/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FlowsIdRoute = FlowsIdRouteImport.update({
+  id: '/flows/$id',
+  path: '/flows/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/otp': typeof OtpRoute
+  '/sessions': typeof SessionsRoute
+  '/settings': typeof SettingsRoute
+  '/templates': typeof TemplatesRoute
+  '/flows/$id': typeof FlowsIdRoute
+  '/flows/new': typeof FlowsNewRoute
+  '/flows/': typeof FlowsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/otp': typeof OtpRoute
+  '/sessions': typeof SessionsRoute
+  '/settings': typeof SettingsRoute
+  '/templates': typeof TemplatesRoute
+  '/flows/$id': typeof FlowsIdRoute
+  '/flows/new': typeof FlowsNewRoute
+  '/flows': typeof FlowsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/otp': typeof OtpRoute
+  '/sessions': typeof SessionsRoute
+  '/settings': typeof SettingsRoute
+  '/templates': typeof TemplatesRoute
+  '/flows/$id': typeof FlowsIdRoute
+  '/flows/new': typeof FlowsNewRoute
+  '/flows/': typeof FlowsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/otp'
+    | '/sessions'
+    | '/settings'
+    | '/templates'
+    | '/flows/$id'
+    | '/flows/new'
+    | '/flows/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/otp'
+    | '/sessions'
+    | '/settings'
+    | '/templates'
+    | '/flows/$id'
+    | '/flows/new'
+    | '/flows'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/otp'
+    | '/sessions'
+    | '/settings'
+    | '/templates'
+    | '/flows/$id'
+    | '/flows/new'
+    | '/flows/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
+  OtpRoute: typeof OtpRoute
+  SessionsRoute: typeof SessionsRoute
+  SettingsRoute: typeof SettingsRoute
+  TemplatesRoute: typeof TemplatesRoute
+  FlowsIdRoute: typeof FlowsIdRoute
+  FlowsNewRoute: typeof FlowsNewRoute
+  FlowsIndexRoute: typeof FlowsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/templates': {
+      id: '/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sessions': {
+      id: '/sessions'
+      path: '/sessions'
+      fullPath: '/sessions'
+      preLoaderRoute: typeof SessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/otp': {
+      id: '/otp'
+      path: '/otp'
+      fullPath: '/otp'
+      preLoaderRoute: typeof OtpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +191,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/flows/': {
+      id: '/flows/'
+      path: '/flows'
+      fullPath: '/flows/'
+      preLoaderRoute: typeof FlowsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/flows/new': {
+      id: '/flows/new'
+      path: '/flows/new'
+      fullPath: '/flows/new'
+      preLoaderRoute: typeof FlowsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/flows/$id': {
+      id: '/flows/$id'
+      path: '/flows/$id'
+      fullPath: '/flows/$id'
+      preLoaderRoute: typeof FlowsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
+  OtpRoute: OtpRoute,
+  SessionsRoute: SessionsRoute,
+  SettingsRoute: SettingsRoute,
+  TemplatesRoute: TemplatesRoute,
+  FlowsIdRoute: FlowsIdRoute,
+  FlowsNewRoute: FlowsNewRoute,
+  FlowsIndexRoute: FlowsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
