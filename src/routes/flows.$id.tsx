@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/flows/$id")({
+  ssr: false,
   head: () => ({ meta: [{ title: "Builder — BerryFlow" }] }),
   component: FlowBuilderPage,
 });
