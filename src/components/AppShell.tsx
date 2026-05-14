@@ -43,17 +43,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar/70 backdrop-blur">
-        <div className="flex items-center gap-2 border-b border-sidebar-border px-4 py-5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-primary shadow-glow">
+      <aside className="relative flex w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar/70 backdrop-blur">
+        <div className="hero-orb hero-orb-primary absolute -left-16 top-8 h-40 w-40" />
+        <div className="hero-orb hero-orb-secondary absolute right-0 top-40 h-32 w-32" />
+        <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-6">
+          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-primary shadow-glow">
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           <div className="leading-tight">
-            <p className="text-sm font-bold tracking-tight">BerryFlow</p>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">by BerrySDK</p>
+            <p className="text-base font-bold tracking-tight text-shimmer">BerryFlow</p>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">by BerrySDK</p>
           </div>
         </div>
-        <nav className="flex-1 space-y-0.5 p-2">
+        <nav className="flex-1 space-y-1 px-3 py-4">
           {items.map(({ to, label, icon: Icon }) => {
             const active = path === to || (to !== "/dashboard" && path.startsWith(to));
             return (
@@ -61,9 +63,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={to}
                 to={to}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                  "flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm transition-all duration-200",
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-card"
+                    ? "magic-panel text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                 )}
               >
@@ -74,10 +76,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="border-t border-sidebar-border p-3">
-          <div className="rounded-lg border border-border bg-gradient-surface p-3">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Sessao ativa</p>
-            <div className="mt-2 space-y-2">
+        <div className="border-t border-sidebar-border p-4">
+          <div className="magic-panel rounded-3xl p-4">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Sessao ativa</p>
+            <div className="mt-3 space-y-3">
               <Select
                 value={currentSession?.id ?? ""}
                 onValueChange={(value) => setSelectedSessionId(value || null)}
@@ -100,9 +102,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </p>
             </div>
           </div>
-          <div className="mt-3 rounded-lg border border-border bg-gradient-surface p-3">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Conta</p>
-            <p className="mt-1 text-sm font-semibold">{user?.name ?? "Berry User"}</p>
+          <div className="magic-panel mt-3 rounded-3xl p-4">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Conta</p>
+            <p className="mt-2 text-sm font-semibold">{user?.name ?? "Berry User"}</p>
             <p className="text-[11px] text-muted-foreground">{user?.email ?? ""}</p>
             <Button variant="outline" size="sm" className="mt-3 w-full" onClick={logout}>
               Sair
@@ -125,11 +127,13 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="border-b border-border bg-glow px-8 py-6">
-      <div className="flex items-start gap-4">
+    <header className="relative overflow-hidden border-b border-border bg-glow px-8 py-7">
+      <div className="hero-orb hero-orb-primary absolute right-12 top-0 h-28 w-28" />
+      <div className="hero-orb hero-orb-secondary absolute left-1/3 top-6 h-24 w-24" />
+      <div className="relative flex items-start gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-          {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+          <h1 className="text-3xl font-bold tracking-tight text-shimmer">{title}</h1>
+          {description ? <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{description}</p> : null}
         </div>
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
       </div>

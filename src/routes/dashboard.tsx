@@ -55,8 +55,32 @@ function DashboardPage() {
         }
       />
       <div className="space-y-8 p-8">
+        <section className="hero-grid magic-panel rounded-[2rem] p-6 lg:p-8">
+          <div className="grid gap-8 lg:grid-cols-[1.2fr,0.8fr]">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-xs uppercase tracking-[0.24em] text-primary-glow">
+                BerryStudio command center
+              </div>
+              <div className="space-y-3">
+                <h2 className="text-4xl font-bold tracking-tight text-shimmer">
+                  {selectedSessionId ? "Sua operacao por sessao em tempo real." : "Escolha uma sessao para entrar na operacao."}
+                </h2>
+                <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
+                  Fluxos, runtime, pareamento, metricas de OTP e execucao visualizados em um painel pensado para BerryProtocol.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <HeroStat label="Fluxos vivos" value={metrics.data?.activeFlows ?? "-"} hint="Ativos na sessao atual" />
+              <HeroStat label="OTPs hoje" value={metrics.data?.otpsSentToday ?? "-"} hint="Envios monitorados" />
+              <HeroStat label="Saude OTP" value={metrics.data ? `${Math.round((1 - metrics.data.otpExpirationRate) * 100)}%` : "-"} hint="Expiracao sob controle" />
+              <HeroStat label="Sessoes online" value={metrics.data?.connectedSessions ?? "-"} hint="Disponibilidade atual" />
+            </div>
+          </div>
+        </section>
+
         {!selectedSessionId ? (
-          <Card className="bg-gradient-surface p-6">
+          <Card className="magic-panel rounded-[1.75rem] p-6">
             <p className="text-sm text-muted-foreground">
               Escolha uma sessao no seletor lateral para trabalhar com dashboard, fluxos e OTP por sessao.
             </p>
@@ -64,11 +88,11 @@ function DashboardPage() {
         ) : null}
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-          <Metric label="Total de fluxos" value={metrics.data?.totalFlows ?? "-"} icon={Workflow} />
-          <Metric label="Ativos" value={metrics.data?.activeFlows ?? "-"} icon={Activity} tone="success" />
-          <Metric label="Rascunhos" value={metrics.data?.draftFlows ?? "-"} icon={FileDown} />
-          <Metric label="Sessao ativa" value={metrics.data?.connectedSessions ?? "-"} icon={Smartphone} />
-          <Metric label="OTPs hoje" value={metrics.data?.otpsSentToday.toLocaleString() ?? "-"} icon={KeyRound} tone="primary" />
+            <Metric label="Total de fluxos" value={metrics.data?.totalFlows ?? "-"} icon={Workflow} />
+            <Metric label="Ativos" value={metrics.data?.activeFlows ?? "-"} icon={Activity} tone="success" />
+            <Metric label="Rascunhos" value={metrics.data?.draftFlows ?? "-"} icon={FileDown} />
+            <Metric label="Sessao ativa" value={metrics.data?.connectedSessions ?? "-"} icon={Smartphone} />
+            <Metric label="OTPs hoje" value={metrics.data?.otpsSentToday.toLocaleString() ?? "-"} icon={KeyRound} tone="primary" />
           <Metric
             label="Uso / Expira"
             value={
@@ -82,7 +106,7 @@ function DashboardPage() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-3">
-          <Card className="bg-gradient-surface p-6 lg:col-span-2">
+          <Card className="magic-panel rounded-[1.75rem] p-6 lg:col-span-2">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Fluxos recentes</h2>
@@ -118,7 +142,7 @@ function DashboardPage() {
             </div>
           </Card>
 
-          <Card className="space-y-3 bg-gradient-surface p-6">
+          <Card className="magic-panel space-y-3 rounded-[1.75rem] p-6">
             <h2 className="text-lg font-semibold">Acoes rapidas</h2>
             <Quick to="/flows/new" icon={Workflow} title="Criar fluxo" desc="Comece em branco no builder." />
             <Quick to="/otp" icon={KeyRound} title="Criar fluxo OTP" desc="Login, verificacao e recuperacao." />
@@ -127,7 +151,7 @@ function DashboardPage() {
           </Card>
         </section>
 
-        <Card className="bg-gradient-surface p-6">
+        <Card className="magic-panel rounded-[1.75rem] p-6">
           <div className="mb-3 flex items-center gap-3">
             <TimerReset className="h-4 w-4 text-primary-glow" />
             <h2 className="text-lg font-semibold">Saude do BerryOTP</h2>
@@ -157,7 +181,7 @@ function Metric({
   const toneCls =
     tone === "primary" ? "text-primary-glow" : tone === "success" ? "text-success" : "text-foreground";
   return (
-    <Card className="bg-gradient-surface p-4">
+    <Card className="magic-panel rounded-[1.5rem] p-4">
       <div className="flex items-center justify-between">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
         <Icon className={`h-4 w-4 ${toneCls}`} />
@@ -181,7 +205,7 @@ function Quick({
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 rounded-lg border border-border bg-card/40 p-3 transition-all hover:border-primary/40 hover:bg-card hover:shadow-glow"
+      className="flex items-center gap-3 rounded-[1.25rem] border border-border bg-card/40 p-3 transition-all hover:border-primary/40 hover:bg-card hover:shadow-glow"
     >
       <div className="grid h-9 w-9 place-items-center rounded-md bg-primary/15 ring-1 ring-primary/30">
         <Icon className="h-4 w-4 text-primary-glow" />
@@ -207,6 +231,16 @@ function Bar({ label, value, tone }: { label: string; value: number; tone?: "war
       <div className="h-2 overflow-hidden rounded-full bg-muted">
         <div className={`h-full ${cls}`} style={{ width: `${pct}%` }} />
       </div>
+    </div>
+  );
+}
+
+function HeroStat({ label, value, hint }: { label: string; value: React.ReactNode; hint: string }) {
+  return (
+    <div className="rounded-[1.5rem] border border-primary/15 bg-card/45 p-4 backdrop-blur">
+      <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{label}</p>
+      <p className="mt-2 text-3xl font-bold tracking-tight text-shimmer">{value}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   );
 }
