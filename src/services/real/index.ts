@@ -12,6 +12,7 @@ import {
   buildPreview,
   connectRealSession,
   createRealSession,
+  deleteRealSession,
   disconnectRealSession,
   executeFlowLive,
   getDashboardMetrics,
@@ -31,6 +32,7 @@ import {
   recordOtpSend,
   recordOtpVerification,
   simulateFlowLogs,
+  updateRealSession,
   writeFlows,
   writeOtpState,
 } from "./state";
@@ -124,6 +126,23 @@ const updateFlowFn = createServerFn({ method: "POST" })
     return next.find((flow) => flow.id === data.id)!;
   });
 
+const setFlowStatusFn = createServerFn({ method: "POST" })
+  .inputValidator((data: { id: string; status: Flow["status"] }) => data)
+  .handler(async ({ data }) => {
+    const flows = await readFlows();
+    const next = flows.map((flow) =>
+      flow.id === data.id
+        ? {
+            ...flow,
+            status: data.status,
+            updatedAt: new Date().toISOString(),
+          }
+        : flow,
+    );
+    await writeFlows(next);
+    return next.find((flow) => flow.id === data.id)!;
+  });
+
 const publishFlowFn = createServerFn({ method: "POST" })
   .inputValidator((data: { id: string }) => data)
   .handler(async ({ data }) => {
@@ -197,6 +216,25 @@ const createSessionFn = createServerFn({ method: "POST" })
     }) => data,
   )
   .handler(async ({ data }) => createRealSession(data.input));
+
+const updateSessionFn = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      id: string;
+      input: {
+        name?: string;
+        connectionType?: "qr" | "pairing-code";
+        phoneNumber?: string;
+      };
+    }) => data,
+  )
+  .handler(async ({ data }) => updateRealSession(data.id, data.input));
+
+const deleteSessionFn = createServerFn({ method: "POST" })
+  .inputValidator((data: { id: string }) => data)
+  .handler(async ({ data }) => {
+    await deleteRealSession(data.id);
+  });
 
 const connectSessionFn = createServerFn({ method: "POST" })
   .inputValidator((data: { id: string }) => data)
@@ -362,6 +400,7 @@ export const flowService: FlowService = {
   getFlow: (id, sessionId) => getFlowFn({ data: { id, sessionId } }),
   createFlow: (input) => createFlowFn({ data: { input } }),
   updateFlow: (id, input) => updateFlowFn({ data: { id, input } }),
+  setFlowStatus: (id, status) => setFlowStatusFn({ data: { id, status } }),
   publishFlow: (id) => publishFlowFn({ data: { id } }),
   duplicateFlow: (id) => duplicateFlowFn({ data: { id } }),
   archiveFlow: (id) => archiveFlowFn({ data: { id } }),
@@ -371,6 +410,8 @@ export const sessionService: SessionService = {
   listSessions: () => listSessionsFn(),
   getSession: (id) => getSessionFn({ data: { id } }),
   createSession: (input) => createSessionFn({ data: { input } }),
+  updateSession: (id, input) => updateSessionFn({ data: { id, input } }),
+  deleteSession: (id) => deleteSessionFn({ data: { id } }),
   connectSession: (id) => connectSessionFn({ data: { id } }),
   reconnectSession: (id) => reconnectSessionFn({ data: { id } }),
   disconnectSession: (id) => disconnectSessionFn({ data: { id } }),

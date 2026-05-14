@@ -168,6 +168,20 @@ async function writeLocalSessions(sessions: LocalSessionRecord[]): Promise<void>
   await writeJson(SESSIONS_FILE, sessions);
 }
 
+async function deleteSessionArtifacts(sessionId: string): Promise<void> {
+  const { rm } = await import("node:fs/promises");
+  await rm(resolve(BERRY_SESSIONS_DIR, sessionId), { recursive: true, force: true }).catch(() => undefined);
+
+  try {
+    const Database = require(resolve(BERRY_PROTOCOL_ROOT, "node_modules", "better-sqlite3"));
+    const db = new Database(BERRY_PROTOCOL_DB);
+    db.prepare("DELETE FROM auth_sessions WHERE session_id = ?").run(sessionId);
+    db.close();
+  } catch {
+    // ignore cleanup errors from optional local runtime state
+  }
+}
+
 async function readExecutionStore(): Promise<Record<string, ExecutionLog[]>> {
   return readJson(EXECUTIONS_FILE, {});
 }
@@ -412,6 +426,31 @@ export async function createRealSession(input: {
   return (await listRealSessions()).find((session) => session.id === normalizedId)!;
 }
 
+export async function updateRealSession(
+  sessionId: string,
+  input: {
+    name?: string;
+    connectionType?: Session["connectionType"];
+    phoneNumber?: string;
+  },
+): Promise<Session> {
+  const localSessions = await readLocalSessions();
+  const index = localSessions.findIndex((session) => session.id === sessionId);
+  if (index === -1) {
+    throw new Error("Sessao nao encontrada.");
+  }
+
+  const current = localSessions[index];
+  localSessions[index] = {
+    ...current,
+    name: input.name?.trim() || current.name,
+    connectionType: input.connectionType ?? current.connectionType,
+    phoneNumber: input.phoneNumber?.trim() || undefined,
+  };
+  await writeLocalSessions(localSessions);
+  return (await listRealSessions()).find((session) => session.id === sessionId)!;
+}
+
 async function getLocalSession(sessionId: string): Promise<LocalSessionRecord | undefined> {
   const localSessions = await readLocalSessions();
   return localSessions.find((session) => session.id === sessionId);
@@ -467,6 +506,26 @@ export async function disconnectRealSession(sessionId: string): Promise<Session>
     updatedAt: new Date().toISOString(),
   });
   return (await listRealSessions()).find((session) => session.id === sessionId)!;
+}
+
+export async function deleteRealSession(sessionId: string): Promise<void> {
+  const client = runtime.clients.get(sessionId);
+  if (client) {
+    await client.disconnect().catch(() => undefined);
+  }
+
+  runtime.clients.delete(sessionId);
+  runtime.sessionState.delete(sessionId);
+
+  for (const key of [...runtime.otpManagers.keys()]) {
+    if (key.startsWith(`${sessionId}:`)) {
+      runtime.otpManagers.delete(key);
+    }
+  }
+
+  const localSessions = await readLocalSessions();
+  await writeLocalSessions(localSessions.filter((session) => session.id !== sessionId));
+  await deleteSessionArtifacts(sessionId);
 }
 
 export async function getRealSessionQr(sessionId: string): Promise<string> {

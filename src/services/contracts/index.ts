@@ -9,6 +9,7 @@ export interface FlowService {
   getFlow(id: string, sessionId?: string): Promise<Flow | null>;
   createFlow(input: Partial<Flow> & { name: string }): Promise<Flow>;
   updateFlow(id: string, input: Partial<Flow>): Promise<Flow>;
+  setFlowStatus(id: string, status: Flow["status"]): Promise<Flow>;
   publishFlow(id: string): Promise<Flow>;
   duplicateFlow(id: string): Promise<Flow>;
   archiveFlow(id: string): Promise<Flow>;
@@ -23,6 +24,15 @@ export interface SessionService {
     connectionType: Session["connectionType"];
     phoneNumber?: string;
   }): Promise<Session>;
+  updateSession(
+    id: string,
+    input: {
+      name?: string;
+      connectionType?: Session["connectionType"];
+      phoneNumber?: string;
+    },
+  ): Promise<Session>;
+  deleteSession(id: string): Promise<void>;
   connectSession(id: string): Promise<Session>;
   reconnectSession(id: string): Promise<Session>;
   disconnectSession(id: string): Promise<Session>;
