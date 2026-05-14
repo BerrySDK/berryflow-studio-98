@@ -63,6 +63,7 @@ export interface FlowVersion {
 
 export interface Flow {
   id: string;
+  sessionId?: string;
   name: string;
   slug: string;
   description?: string;

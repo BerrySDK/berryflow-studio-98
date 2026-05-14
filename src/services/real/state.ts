@@ -47,8 +47,8 @@ type OTPMetricsState = {
   sentToday: number;
   usageRate: number;
   expirationRate: number;
-  sends: Array<{ id: string; to: string; sentAt: number; used?: boolean; expired?: boolean }>;
-  flows: Array<{ id: string; createdAt: number; config: OTPFlowConfig }>;
+  sends: Array<{ id: string; to: string; sessionId?: string; sentAt: number; used?: boolean; expired?: boolean }>;
+  flows: Array<{ id: string; createdAt: number; sessionId?: string; config: OTPFlowConfig }>;
 };
 
 type SessionSnapshot = {
@@ -493,9 +493,14 @@ export async function getDefaultClient(): Promise<BerryClientLike> {
   return getOrCreateClient(sessionId);
 }
 
-export async function getOtpManager(config?: Partial<OTPFlowConfig>) {
-  const sessionId = await pickDefaultSessionId();
-  const key = `${sessionId}:${config?.issuer ?? "BerryProtocol"}`;
+export async function getClientForSession(sessionId?: string): Promise<BerryClientLike> {
+  const resolvedSessionId = sessionId ?? (await pickDefaultSessionId());
+  return getOrCreateClient(resolvedSessionId);
+}
+
+export async function getOtpManager(sessionId?: string, config?: Partial<OTPFlowConfig>) {
+  const resolvedSessionId = sessionId ?? (await pickDefaultSessionId());
+  const key = `${resolvedSessionId}:${config?.issuer ?? "BerryProtocol"}`;
   const existing = runtime.otpManagers.get(key);
   if (existing) return existing;
 
@@ -505,7 +510,7 @@ export async function getOtpManager(config?: Partial<OTPFlowConfig>) {
     throw new Error("Nao foi possivel carregar BerryOTP a partir do workspace local.");
   }
 
-  const client = await getOrCreateClient(sessionId);
+  const client = await getOrCreateClient(resolvedSessionId);
   const manager = BerryOTP.createLoginFlow(client, {
     issuer: config?.issuer,
     ttlMs: config?.ttlMs,
@@ -518,9 +523,9 @@ export async function getOtpManager(config?: Partial<OTPFlowConfig>) {
   return manager;
 }
 
-export async function recordOtpSend(id: string, to: string): Promise<void> {
+export async function recordOtpSend(id: string, to: string, sessionId?: string): Promise<void> {
   const state = await readOtpState();
-  state.sends.unshift({ id, to, sentAt: Date.now() });
+  state.sends.unshift({ id, to, sessionId, sentAt: Date.now() });
   state.sentToday = state.sends.filter((item) => {
     const date = new Date(item.sentAt);
     const today = new Date();
@@ -581,19 +586,32 @@ export function listFlowTemplates(): FlowTemplate[] {
   return MOCK_TEMPLATES;
 }
 
-export async function getDashboardMetrics(): Promise<DashboardMetrics> {
+export async function getDashboardMetrics(sessionId?: string): Promise<DashboardMetrics> {
   const flows = await readFlows();
   const sessions = await listRealSessions();
   const otpState = await readOtpState();
+  const filteredFlows = sessionId ? flows.filter((flow) => !flow.sessionId || flow.sessionId === sessionId) : flows;
+  const filteredSends = sessionId
+    ? otpState.sends.filter((entry) => {
+        const record = entry as typeof entry & { sessionId?: string };
+        return !record.sessionId || record.sessionId === sessionId;
+      })
+    : otpState.sends;
+  const totalOtp = filteredSends.length || 1;
+  const usedOtp = filteredSends.filter((entry) => entry.used).length;
+  const expiredOtp = filteredSends.filter((entry) => entry.expired).length;
+  const selectedSessionConnected = sessionId
+    ? sessions.some((session) => session.id === sessionId && session.status === "connected")
+    : sessions.filter((session) => session.status === "connected").length;
 
   return {
-    totalFlows: flows.length,
-    activeFlows: flows.filter((flow) => flow.status === "active").length,
-    draftFlows: flows.filter((flow) => flow.status === "draft").length,
-    connectedSessions: sessions.filter((session) => session.status === "connected").length,
-    otpsSentToday: otpState.sentToday,
-    otpUsageRate: otpState.usageRate,
-    otpExpirationRate: otpState.expirationRate,
+    totalFlows: filteredFlows.length,
+    activeFlows: filteredFlows.filter((flow) => flow.status === "active").length,
+    draftFlows: filteredFlows.filter((flow) => flow.status === "draft").length,
+    connectedSessions: typeof selectedSessionConnected === "number" ? selectedSessionConnected : selectedSessionConnected ? 1 : 0,
+    otpsSentToday: sessionId ? filteredSends.length : otpState.sentToday,
+    otpUsageRate: filteredSends.length ? usedOtp / totalOtp : otpState.usageRate,
+    otpExpirationRate: filteredSends.length ? expiredOtp / totalOtp : otpState.expirationRate,
   };
 }
 
@@ -656,6 +674,205 @@ export async function simulateFlowLogs(flowId: string): Promise<ExecutionLog[]> 
     ts: new Date(Date.now() + index * 250).toISOString(),
     message: node.data.kind,
   }));
+
+  await setExecutionLogs(flowId, logs);
+  return logs;
+}
+
+const DEFAULT_CAROUSEL_IMAGE =
+  "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80";
+
+function orderedNodes(flow: Flow) {
+  const outgoing = new Map<string, string[]>();
+  const incoming = new Set<string>();
+
+  for (const edge of flow.edges) {
+    outgoing.set(edge.source, [...(outgoing.get(edge.source) ?? []), edge.target]);
+    incoming.add(edge.target);
+  }
+
+  const starters = flow.nodes.filter(
+    (node) => node.data.kind === "start" || node.data.category === "event" || !incoming.has(node.id),
+  );
+  const visited = new Set<string>();
+  const ordered: Flow["nodes"] = [];
+
+  const walk = (nodeId: string) => {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+    const node = flow.nodes.find((entry) => entry.id === nodeId);
+    if (!node) return;
+    ordered.push(node);
+    for (const next of outgoing.get(nodeId) ?? []) {
+      walk(next);
+    }
+  };
+
+  for (const starter of starters) walk(starter.id);
+  for (const node of flow.nodes) walk(node.id);
+
+  return ordered;
+}
+
+export async function executeFlowLive(
+  flowId: string,
+  input: { to: string; sessionId?: string },
+): Promise<ExecutionLog[]> {
+  const flows = await readFlows();
+  const flow = flows.find((entry) => entry.id === flowId);
+  if (!flow) {
+    throw new Error("Fluxo nao encontrado.");
+  }
+
+  const resolvedSessionId = input.sessionId ?? flow.sessionId ?? (await pickDefaultSessionId());
+  const client = await getClientForSession(resolvedSessionId);
+  const logs: ExecutionLog[] = [];
+
+  for (const node of orderedNodes(flow)) {
+    const startedAt = Date.now();
+    const config = (node.data.config ?? {}) as Record<string, unknown>;
+    try {
+      if (node.data.category === "event" || node.data.kind === "start" || node.data.kind === "end") {
+        logs.push({
+          id: `${flowId}_${node.id}_${startedAt}`,
+          flowId,
+          nodeId: node.id,
+          nodeLabel: node.data.label,
+          status: "ok",
+          durationMs: 0,
+          ts: new Date().toISOString(),
+          message: "Node de controle percorrido.",
+        });
+        continue;
+      }
+
+      switch (node.data.kind) {
+        case "delay":
+          await new Promise((resolve) => setTimeout(resolve, Number(config.ms ?? 1000)));
+          break;
+        case "send-text":
+          await client.sendText?.(input.to, String(config.text ?? ""));
+          break;
+        case "ai-label-message":
+          await client.sendMessage?.(input.to, {
+            text: String(config.text ?? config.hint ?? node.data.label),
+            ai: true,
+          });
+          break;
+        case "send-buttons":
+          await client.sendButtons?.(input.to, {
+            text: String(config.text ?? "Escolha uma opcao"),
+            footer: typeof config.footer === "string" ? config.footer : undefined,
+            buttons: ((config.buttons as string[] | undefined) ?? ["Opcao 1"]).map((title, index) => ({
+              id: `btn_${index + 1}`,
+              title,
+              kind: "quick_reply",
+            })),
+          });
+          break;
+        case "send-list":
+          await client.sendList?.(input.to, {
+            title: typeof config.title === "string" ? config.title : "Menu",
+            text: String(config.text ?? "Escolha uma opcao"),
+            footer: typeof config.footer === "string" ? config.footer : undefined,
+            buttonText: typeof config.buttonText === "string" ? config.buttonText : "Abrir lista",
+            sections: [
+              {
+                title: typeof config.sectionTitle === "string" ? config.sectionTitle : "Opcoes",
+                rows: ((config.items as Array<{ id?: string; title?: string; description?: string }> | undefined) ?? [
+                  { id: "op_1", title: "Opcao 1" },
+                ]).map((item, index) => ({
+                  id: item.id ?? `row_${index + 1}`,
+                  title: item.title ?? `Opcao ${index + 1}`,
+                  description: item.description,
+                })),
+              },
+            ],
+          });
+          break;
+        case "send-carousel":
+          await client.sendCarousel?.(input.to, {
+            text: String(config.text ?? "Confira as opcoes"),
+            footer: typeof config.footer === "string" ? config.footer : undefined,
+            carouselCardType:
+              config.carouselCardType === "video" || config.carouselCardType === "mixed"
+                ? config.carouselCardType
+                : "image",
+            cards: (
+              (config.cards as Array<{ title?: string; body?: string; footer?: string; image?: string; button?: string }> | undefined) ?? [
+                { title: "Card 1", body: "Descricao", button: "Abrir" },
+              ]
+            ).map((card, index) => ({
+              title: card.title ?? `Card ${index + 1}`,
+              body: card.body ?? "Descricao do card",
+              footer: card.footer,
+              image: { url: card.image ?? DEFAULT_CAROUSEL_IMAGE },
+              buttons: [
+                {
+                  id: `card_${index + 1}`,
+                  title: card.button ?? "Abrir",
+                  kind: "quick_reply",
+                },
+              ],
+            })),
+          });
+          break;
+        case "generate-otp":
+        case "send-otp":
+        case "create-login-flow": {
+          const manager = await getOtpManager(resolvedSessionId, {
+            issuer: typeof config.issuer === "string" ? config.issuer : "BerryProtocol",
+            ttlMs: typeof config.ttlMs === "number" ? config.ttlMs : 120000,
+            mode:
+              config.mode === "stable" || config.mode === "experimental-copy-code"
+                ? config.mode
+                : "copy-code",
+            editOnExpire: config.editOnExpire !== false,
+            autoReplyOnDenied: config.autoReplyOnDenied !== false,
+            codeLength: typeof config.length === "number" ? config.length : 6,
+          });
+          const sent = await manager.sendLoginCode(input.to, {});
+          await recordOtpSend(sent.id, input.to, resolvedSessionId);
+          break;
+        }
+        default:
+          logs.push({
+            id: `${flowId}_${node.id}_${startedAt}`,
+            flowId,
+            nodeId: node.id,
+            nodeLabel: node.data.label,
+            status: "skipped",
+            durationMs: 0,
+            ts: new Date().toISOString(),
+            message: `Node ${node.data.kind} ainda nao possui executor real.`,
+          });
+          continue;
+      }
+
+      logs.push({
+        id: `${flowId}_${node.id}_${startedAt}`,
+        flowId,
+        nodeId: node.id,
+        nodeLabel: node.data.label,
+        status: "ok",
+        durationMs: Date.now() - startedAt,
+        ts: new Date().toISOString(),
+        message: `Executado via sessao ${resolvedSessionId}.`,
+      });
+    } catch (error) {
+      logs.push({
+        id: `${flowId}_${node.id}_${startedAt}`,
+        flowId,
+        nodeId: node.id,
+        nodeLabel: node.data.label,
+        status: "error",
+        durationMs: Date.now() - startedAt,
+        ts: new Date().toISOString(),
+        message: error instanceof Error ? error.message : "Falha ao executar node.",
+      });
+      break;
+    }
+  }
 
   await setExecutionLogs(flowId, logs);
   return logs;

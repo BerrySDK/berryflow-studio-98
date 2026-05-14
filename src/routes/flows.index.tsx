@@ -12,6 +12,7 @@ import { flowService } from "@/services";
 import { Workflow, Search, MoreHorizontal, Copy, Archive, Power, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { FlowStatus, FlowType } from "@/types";
+import { useSelectedSession } from "@/features/session/session-context";
 
 export const Route = createFileRoute("/flows/")({
   head: () => ({ meta: [{ title: "Fluxos — BerryFlow" }] }),
@@ -21,7 +22,11 @@ export const Route = createFileRoute("/flows/")({
 function FlowsPage() {
   const qc = useQueryClient();
   const nav = useNavigate();
-  const flows = useQuery({ queryKey: ["flows"], queryFn: () => flowService.listFlows() });
+  const { selectedSessionId } = useSelectedSession();
+  const flows = useQuery({
+    queryKey: ["flows", selectedSessionId],
+    queryFn: () => flowService.listFlows(selectedSessionId ?? undefined),
+  });
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"all" | FlowStatus>("all");
   const [type, setType] = useState<"all" | FlowType>("all");
@@ -51,7 +56,11 @@ function FlowsPage() {
     <AppShell>
       <PageHeader
         title="Fluxos"
-        description="Gerencie todas as automações conversacionais do workspace."
+        description={
+          selectedSessionId
+            ? `Gerencie os fluxos vinculados a sessao ${selectedSessionId}.`
+            : "Selecione uma sessao para listar fluxos por sessao."
+        }
         actions={
           <Button onClick={() => nav({ to: "/flows/new" })} className="bg-gradient-primary shadow-glow">
             <Plus className="h-4 w-4 mr-1.5" /> Novo fluxo
@@ -59,6 +68,13 @@ function FlowsPage() {
         }
       />
       <div className="p-8 space-y-5">
+        {!selectedSessionId ? (
+          <Card className="p-5 bg-gradient-surface">
+            <p className="text-sm text-muted-foreground">
+              Escolha uma sessao na lateral antes de criar ou editar fluxos.
+            </p>
+          </Card>
+        ) : null}
         <Card className="p-3 flex flex-wrap gap-2 items-center bg-gradient-surface">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

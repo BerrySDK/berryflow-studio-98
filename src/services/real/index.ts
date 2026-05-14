@@ -13,7 +13,9 @@ import {
   connectRealSession,
   createRealSession,
   disconnectRealSession,
+  executeFlowLive,
   getDashboardMetrics,
+  getClientForSession,
   getDefaultClient,
   getExecutionLogs,
   getOtpManager,
@@ -51,13 +53,27 @@ function pickStarterFlow(type: Flow["type"]): Flow {
   return MOCK_FLOWS.find((flow) => flow.type === "automation") ?? MOCK_FLOWS[0];
 }
 
-const listFlowsFn = createServerFn({ method: "GET" }).handler(async () => readFlows());
-
-const getFlowFn = createServerFn({ method: "GET" })
-  .inputValidator((data: { id: string }) => data)
+const listFlowsFn = createServerFn({ method: "GET" })
+  .inputValidator((data: { sessionId?: string } | undefined) => data)
   .handler(async ({ data }) => {
     const flows = await readFlows();
-    return flows.find((flow) => flow.id === data.id) ?? null;
+    if (!data?.sessionId) return flows;
+    return flows.filter((flow) => !flow.sessionId || flow.sessionId === data.sessionId);
+  });
+
+const getFlowFn = createServerFn({ method: "GET" })
+  .inputValidator((data: { id: string; sessionId?: string }) => data)
+  .handler(async ({ data }) => {
+    const flows = await readFlows();
+    const flow = flows.find((entry) => entry.id === data.id) ?? null;
+    if (!flow) return null;
+    if (data.sessionId && flow.sessionId && flow.sessionId !== data.sessionId) {
+      return null;
+    }
+    if (data.sessionId && !flow.sessionId) {
+      return { ...flow, sessionId: data.sessionId };
+    }
+    return flow;
   });
 
 const createFlowFn = createServerFn({ method: "POST" })
@@ -211,7 +227,7 @@ const createLoginFlowFn = createServerFn({ method: "POST" })
 const sendLoginCodeFn = createServerFn({ method: "POST" })
   .inputValidator((data: { to: string; payload: Partial<import("@/types").OTPFlowConfig> }) => data)
   .handler(async ({ data }) => {
-    const manager = await getOtpManager(data.payload);
+    const manager = await getOtpManager(undefined, data.payload);
     const sent = await manager.sendLoginCode(data.to, {
       metadata: data.payload.metadata,
       userId: data.payload.metadata?.userId,
@@ -261,51 +277,56 @@ const getOtpMetricsFn = createServerFn({ method: "GET" }).handler(async () => {
 const listOtpTemplatesFn = createServerFn({ method: "GET" }).handler(async () => listOtpTemplates());
 
 const sendTextFn = createServerFn({ method: "POST" })
-  .inputValidator((data: { to: string; text: string }) => data)
+  .inputValidator((data: { to: string; text: string; sessionId?: string }) => data)
   .handler(async ({ data }) => {
-    const client = await getDefaultClient();
+    const client = data.sessionId ? await getClientForSession(data.sessionId) : await getDefaultClient();
     await client.sendText?.(data.to, data.text);
   });
 
 const sendButtonsFn = createServerFn({ method: "POST" })
-  .inputValidator((data: { to: string; payload: unknown }) => data)
+  .inputValidator((data: { to: string; payload: unknown; sessionId?: string }) => data)
   .handler(async ({ data }) => {
-    const client = await getDefaultClient();
+    const client = data.sessionId ? await getClientForSession(data.sessionId) : await getDefaultClient();
     await client.sendButtons?.(data.to, data.payload);
   });
 
 const sendListFn = createServerFn({ method: "POST" })
-  .inputValidator((data: { to: string; payload: unknown }) => data)
+  .inputValidator((data: { to: string; payload: unknown; sessionId?: string }) => data)
   .handler(async ({ data }) => {
-    const client = await getDefaultClient();
+    const client = data.sessionId ? await getClientForSession(data.sessionId) : await getDefaultClient();
     await client.sendList?.(data.to, data.payload);
   });
 
 const sendCarouselFn = createServerFn({ method: "POST" })
-  .inputValidator((data: { to: string; payload: unknown }) => data)
+  .inputValidator((data: { to: string; payload: unknown; sessionId?: string }) => data)
   .handler(async ({ data }) => {
-    const client = await getDefaultClient();
+    const client = data.sessionId ? await getClientForSession(data.sessionId) : await getDefaultClient();
     await client.sendCarousel?.(data.to, data.payload);
   });
 
 const sendReactionFn = createServerFn({ method: "POST" })
-  .inputValidator((data: { to: string; emoji: string }) => data)
+  .inputValidator((data: { to: string; emoji: string; sessionId?: string }) => data)
   .handler(async ({ data }) => {
-    const client = await getDefaultClient();
+    const client = data.sessionId ? await getClientForSession(data.sessionId) : await getDefaultClient();
     await client.sendReaction?.(data.to, data.emoji);
   });
 
 const sendAiMessageFn = createServerFn({ method: "POST" })
-  .inputValidator((data: { to: string; prompt: string }) => data)
+  .inputValidator((data: { to: string; prompt: string; sessionId?: string }) => data)
   .handler(async ({ data }) => {
-    const client = await getDefaultClient();
+    const client = data.sessionId ? await getClientForSession(data.sessionId) : await getDefaultClient();
     await client.sendMessage?.(data.to, { text: data.prompt, ai: true });
   });
 
 const simulateFlowFn = createServerFn({ method: "POST" })
-  .inputValidator((data: { flowId: string; input: { trigger: string; payload?: unknown } }) => data)
+  .inputValidator((data: { flowId: string; input: { trigger: string; payload?: { to?: string }; sessionId?: string } }) => data)
   .handler(async ({ data }) => {
-    void data.input;
+    if (data.input.payload?.to) {
+      return executeFlowLive(data.flowId, {
+        to: data.input.payload.to,
+        sessionId: data.input.sessionId,
+      });
+    }
     return simulateFlowLogs(data.flowId);
   });
 
@@ -320,20 +341,25 @@ const getPreviewStateFn = createServerFn({ method: "GET" })
   .inputValidator((data: { flowId: string }) => data)
   .handler(async ({ data }) => buildPreview(data.flowId));
 
-const getMetricsFn = createServerFn({ method: "GET" }).handler(async () => getDashboardMetrics());
+const getMetricsFn = createServerFn({ method: "GET" })
+  .inputValidator((data: { sessionId?: string } | undefined) => data)
+  .handler(async ({ data }) => getDashboardMetrics(data?.sessionId));
 
-const getRecentFlowsFn = createServerFn({ method: "GET" }).handler(async () => {
-  const flows = await readFlows();
-  return [...flows]
-    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-    .slice(0, 4);
-});
+const getRecentFlowsFn = createServerFn({ method: "GET" })
+  .inputValidator((data: { sessionId?: string } | undefined) => data)
+  .handler(async ({ data }) => {
+    const flows = await readFlows();
+    return [...flows]
+      .filter((flow) => !data?.sessionId || !flow.sessionId || flow.sessionId === data.sessionId)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+      .slice(0, 4);
+  });
 
 const listTemplatesFn = createServerFn({ method: "GET" }).handler(async () => listFlowTemplates());
 
 export const flowService: FlowService = {
-  listFlows: () => listFlowsFn(),
-  getFlow: (id) => getFlowFn({ data: { id } }),
+  listFlows: (sessionId) => listFlowsFn({ data: { sessionId } }),
+  getFlow: (id, sessionId) => getFlowFn({ data: { id, sessionId } }),
   createFlow: (input) => createFlowFn({ data: { input } }),
   updateFlow: (id, input) => updateFlowFn({ data: { id, input } }),
   publishFlow: (id) => publishFlowFn({ data: { id } }),
@@ -380,8 +406,8 @@ export const executionService: ExecutionService = {
 };
 
 export const dashboardService: DashboardService = {
-  getMetrics: () => getMetricsFn(),
-  getRecentFlows: () => getRecentFlowsFn(),
+  getMetrics: (sessionId) => getMetricsFn({ data: { sessionId } }),
+  getRecentFlows: (sessionId) => getRecentFlowsFn({ data: { sessionId } }),
 };
 
 export const templateService: TemplateService = {

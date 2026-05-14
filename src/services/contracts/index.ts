@@ -5,8 +5,8 @@ import type {
 } from "@/types";
 
 export interface FlowService {
-  listFlows(): Promise<Flow[]>;
-  getFlow(id: string): Promise<Flow | null>;
+  listFlows(sessionId?: string): Promise<Flow[]>;
+  getFlow(id: string, sessionId?: string): Promise<Flow | null>;
   createFlow(input: Partial<Flow> & { name: string }): Promise<Flow>;
   updateFlow(id: string, input: Partial<Flow>): Promise<Flow>;
   publishFlow(id: string): Promise<Flow>;
@@ -49,14 +49,21 @@ export interface MessageService {
 }
 
 export interface ExecutionService {
-  simulateFlow(flowId: string, input: { trigger: string; payload?: unknown }): Promise<ExecutionLog[]>;
+  simulateFlow(
+    flowId: string,
+    input: {
+      trigger: string;
+      payload?: { to?: string };
+      sessionId?: string;
+    },
+  ): Promise<ExecutionLog[]>;
   getExecutionLogs(flowId: string): Promise<ExecutionLog[]>;
   getPreviewState(flowId: string): Promise<ConversationPreview>;
 }
 
 export interface DashboardService {
-  getMetrics(): Promise<DashboardMetrics>;
-  getRecentFlows(): Promise<Flow[]>;
+  getMetrics(sessionId?: string): Promise<DashboardMetrics>;
+  getRecentFlows(sessionId?: string): Promise<Flow[]>;
 }
 
 export interface TemplateService {

@@ -2,13 +2,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
+  Navigate,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider, useAuth } from "@/features/auth/auth-context";
+import { SessionProvider } from "@/features/session/session-context";
 
 import appCss from "../styles.css?url";
 
@@ -115,8 +119,31 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster theme="dark" richColors position="top-right" />
+      <AuthProvider>
+        <SessionProvider>
+          <GuardedApp />
+          <Toaster theme="dark" richColors position="top-right" />
+        </SessionProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function GuardedApp() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const { hydrated, user } = useAuth();
+
+  if (!hydrated) {
+    return <div className="grid min-h-screen place-items-center bg-background text-muted-foreground">Carregando...</div>;
+  }
+
+  if (!user && pathname !== "/login") {
+    return <Navigate to="/login" />;
+  }
+
+  if (user && pathname === "/login") {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return <Outlet />;
 }

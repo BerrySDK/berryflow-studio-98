@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { flowService } from "@/services";
 import type { FlowType } from "@/types";
 import { toast } from "sonner";
+import { useSelectedSession } from "@/features/session/session-context";
 
 export const Route = createFileRoute("/flows/new")({
   head: () => ({ meta: [{ title: "Novo fluxo — BerryFlow" }] }),
@@ -20,14 +21,21 @@ export const Route = createFileRoute("/flows/new")({
 function NewFlowPage() {
   const nav = useNavigate();
   const qc = useQueryClient();
+  const { selectedSessionId } = useSelectedSession();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<FlowType>("automation");
 
   const create = useMutation({
-    mutationFn: () => flowService.createFlow({ name: name || "Novo fluxo", description, type }),
+    mutationFn: () =>
+      flowService.createFlow({
+        name: name || "Novo fluxo",
+        description,
+        type,
+        sessionId: selectedSessionId ?? undefined,
+      }),
     onSuccess: (f) => {
-      qc.invalidateQueries({ queryKey: ["flows"] });
+      qc.invalidateQueries({ queryKey: ["flows", selectedSessionId] });
       toast.success("Fluxo criado");
       nav({ to: "/flows/$id", params: { id: f.id } });
     },
@@ -38,6 +46,12 @@ function NewFlowPage() {
       <PageHeader title="Novo fluxo" description="Configure a base e abra o builder visual." />
       <div className="p-8 max-w-2xl">
         <Card className="p-6 bg-gradient-surface space-y-5">
+          <div className="space-y-1.5">
+            <Label>Sessao selecionada</Label>
+            <div className="rounded-md border border-border bg-card/50 px-3 py-2 text-sm text-muted-foreground">
+              {selectedSessionId ?? "Nenhuma sessao selecionada"}
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label>Nome</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Atendimento inicial" />
@@ -60,7 +74,11 @@ function NewFlowPage() {
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => nav({ to: "/flows" })}>Cancelar</Button>
-            <Button onClick={() => create.mutate()} disabled={create.isPending} className="bg-gradient-primary shadow-glow">
+            <Button
+              onClick={() => create.mutate()}
+              disabled={create.isPending || !selectedSessionId}
+              className="bg-gradient-primary shadow-glow"
+            >
               {create.isPending ? "Criando…" : "Criar e abrir builder"}
             </Button>
           </div>

@@ -7,6 +7,7 @@ interface BuilderState {
   flow: Flow | null;
   selectedNodeId: string | null;
   setFlow: (flow: Flow) => void;
+  clearFlow: () => void;
   setSelectedNodeId: (id: string | null) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
@@ -20,6 +21,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   flow: null,
   selectedNodeId: null,
   setFlow: (flow) => set({ flow, selectedNodeId: null }),
+  clearFlow: () => set({ flow: null, selectedNodeId: null }),
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
   onNodesChange: (changes) => {
