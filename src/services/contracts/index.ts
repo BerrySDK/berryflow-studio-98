@@ -17,6 +17,12 @@ export interface FlowService {
 export interface SessionService {
   listSessions(): Promise<Session[]>;
   getSession(id: string): Promise<Session | null>;
+  createSession(input: {
+    id: string;
+    name: string;
+    connectionType: Session["connectionType"];
+    phoneNumber?: string;
+  }): Promise<Session>;
   connectSession(id: string): Promise<Session>;
   reconnectSession(id: string): Promise<Session>;
   disconnectSession(id: string): Promise<Session>;

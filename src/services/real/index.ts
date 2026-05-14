@@ -11,6 +11,7 @@ import type {
 import {
   buildPreview,
   connectRealSession,
+  createRealSession,
   disconnectRealSession,
   getDashboardMetrics,
   getDefaultClient,
@@ -27,12 +28,28 @@ import {
   reconnectRealSession,
   recordOtpSend,
   recordOtpVerification,
-  setExecutionLogs,
   simulateFlowLogs,
   writeFlows,
+  writeOtpState,
 } from "./state";
 import type { Flow, OTPFlowConfig } from "@/types";
-import { MOCK_LOGS } from "../mock/data";
+import { MOCK_FLOWS, MOCK_LOGS } from "../mock/data";
+
+function pickStarterFlow(type: Flow["type"]): Flow {
+  if (type === "otp") {
+    return MOCK_FLOWS.find((flow) => flow.type === "otp") ?? MOCK_FLOWS[0];
+  }
+  if (type === "campaign") {
+    return MOCK_FLOWS.find((flow) => flow.type === "campaign") ?? MOCK_FLOWS[0];
+  }
+  if (type === "ai") {
+    return (
+      MOCK_FLOWS.find((flow) => flow.type === "campaign" && flow.tags.includes("catalog")) ??
+      MOCK_FLOWS[0]
+    );
+  }
+  return MOCK_FLOWS.find((flow) => flow.type === "automation") ?? MOCK_FLOWS[0];
+}
 
 const listFlowsFn = createServerFn({ method: "GET" }).handler(async () => readFlows());
 
@@ -48,7 +65,8 @@ const createFlowFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const flows = await readFlows();
     const id = `flw_${Math.random().toString(36).slice(2, 8)}`;
-    const base = flows[0];
+    const flowType = data.input.type ?? "automation";
+    const base = pickStarterFlow(flowType);
     const nodes = data.input.nodes ?? base?.nodes ?? [];
     const flow: Flow = {
       ...base,
@@ -56,16 +74,16 @@ const createFlowFn = createServerFn({ method: "POST" })
       id,
       status: "draft",
       slug: data.input.slug ?? data.input.name.toLowerCase().replace(/\s+/g, "-"),
-      tags: data.input.tags ?? [],
+      tags: data.input.tags ?? base.tags,
       version: { version: 1 },
       updatedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       nodes,
       edges: data.input.edges ?? base?.edges ?? [],
       nodeCount: nodes.length,
-      type: data.input.type ?? "automation",
-      channel: data.input.channel ?? "whatsapp",
-      trigger: data.input.trigger ?? "On Message Received",
+      type: flowType,
+      channel: data.input.channel ?? base.channel ?? "whatsapp",
+      trigger: data.input.trigger ?? base.trigger ?? "On Message Received",
     };
     flows.unshift(flow);
     await writeFlows(flows);
@@ -151,6 +169,19 @@ const getSessionFn = createServerFn({ method: "GET" })
     return sessions.find((session) => session.id === data.id) ?? null;
   });
 
+const createSessionFn = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      input: {
+        id: string;
+        name: string;
+        connectionType: "qr" | "pairing-code";
+        phoneNumber?: string;
+      };
+    }) => data,
+  )
+  .handler(async ({ data }) => createRealSession(data.input));
+
 const connectSessionFn = createServerFn({ method: "POST" })
   .inputValidator((data: { id: string }) => data)
   .handler(async ({ data }) => connectRealSession(data.id));
@@ -173,7 +204,6 @@ const createLoginFlowFn = createServerFn({ method: "POST" })
     const state = await readOtpState();
     const id = `otpf_${Date.now()}`;
     state.flows.unshift({ id, createdAt: Date.now(), config: data.config });
-    const { writeOtpState } = await import("./state");
     await writeOtpState(state);
     return { id };
   });
@@ -314,6 +344,7 @@ export const flowService: FlowService = {
 export const sessionService: SessionService = {
   listSessions: () => listSessionsFn(),
   getSession: (id) => getSessionFn({ data: { id } }),
+  createSession: (input) => createSessionFn({ data: { input } }),
   connectSession: (id) => connectSessionFn({ data: { id } }),
   reconnectSession: (id) => reconnectSessionFn({ data: { id } }),
   disconnectSession: (id) => disconnectSessionFn({ data: { id } }),

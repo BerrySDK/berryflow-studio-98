@@ -89,6 +89,7 @@ export interface Session {
   connectionType: "qr" | "pairing-code";
   lastActivityAt: string;
   qrCode?: string;
+  pairingCode?: string;
 }
 
 export type OtpMode = "stable" | "copy-code" | "experimental-copy-code";

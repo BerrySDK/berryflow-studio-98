@@ -33,10 +33,12 @@ const DATA_DIR = resolve(APP_ROOT, ".berryflow-data");
 const FLOWS_FILE = resolve(DATA_DIR, "flows.json");
 const EXECUTIONS_FILE = resolve(DATA_DIR, "executions.json");
 const OTP_STATE_FILE = resolve(DATA_DIR, "otp-state.json");
+const SESSIONS_FILE = resolve(DATA_DIR, "sessions.json");
 
 type RuntimeSessionState = {
   status: Session["status"];
   qrCode?: string;
+  pairingCode?: string;
   updatedAt: string;
   error?: string;
 };
@@ -54,6 +56,7 @@ type SessionSnapshot = {
   registered?: boolean;
   qr?: string;
   authMethod?: "link" | "qr" | "pairing_code";
+  pairingCode?: string;
 };
 
 type SessionCreds = {
@@ -70,6 +73,10 @@ type DbRow = {
 type BerryClientLike = {
   on: (event: string, listener: (payload: unknown) => void) => unknown;
   connectWithQr: () => Promise<void>;
+  connectWithPairingCode?: (
+    phoneNumber: string,
+    customPairingCode?: string,
+  ) => Promise<void>;
   disconnect: () => Promise<void>;
   reconnect: () => Promise<void>;
   getQrCode?: () => string | undefined;
@@ -93,6 +100,14 @@ type BerryOTPModule = {
       dispose?: () => void;
     };
   };
+};
+
+type LocalSessionRecord = {
+  id: string;
+  name: string;
+  connectionType: Session["connectionType"];
+  phoneNumber?: string;
+  createdAt: string;
 };
 
 declare global {
@@ -143,6 +158,14 @@ export async function readFlows(): Promise<Flow[]> {
 
 export async function writeFlows(flows: Flow[]): Promise<void> {
   await writeJson(FLOWS_FILE, flows);
+}
+
+async function readLocalSessions(): Promise<LocalSessionRecord[]> {
+  return readJson(SESSIONS_FILE, []);
+}
+
+async function writeLocalSessions(sessions: LocalSessionRecord[]): Promise<void> {
+  await writeJson(SESSIONS_FILE, sessions);
 }
 
 async function readExecutionStore(): Promise<Record<string, ExecutionLog[]>> {
@@ -242,6 +265,7 @@ function readSessionSnapshots(): SessionSnapshot[] {
         registered: parsed.registered,
         qr: parsed.qr,
         authMethod: parsed.authMethod,
+        pairingCode: parsed.pairingCode,
       };
     });
   } catch {
@@ -270,22 +294,28 @@ export async function listRealSessions(): Promise<Session[]> {
   const dirIds = dirEntries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
   const snapshots = readSessionSnapshots();
   const snapshotMap = new Map(snapshots.map((snapshot) => [snapshot.sessionId, snapshot]));
-  const sessionIds = [...new Set([...dirIds, ...snapshotMap.keys(), ...runtime.sessionState.keys()])];
+  const localSessions = await readLocalSessions();
+  const localMap = new Map(localSessions.map((session) => [session.id, session]));
+  const sessionIds = [
+    ...new Set([...dirIds, ...snapshotMap.keys(), ...runtime.sessionState.keys(), ...localMap.keys()]),
+  ];
 
   const sessions = await Promise.all(
     sessionIds.map(async (sessionId) => {
       const creds = await readSessionCreds(sessionId);
       const snapshot = snapshotMap.get(sessionId);
+      const local = localMap.get(sessionId);
       const runtimeState = runtime.sessionState.get(sessionId);
 
       return {
         id: sessionId,
-        name: getSessionName(sessionId, creds ?? undefined),
-        phoneNumber: normalizePhone(creds?.me?.id),
+        name: local?.name?.trim() || getSessionName(sessionId, creds ?? undefined),
+        phoneNumber: normalizePhone(creds?.me?.id) ?? local?.phoneNumber,
         status: buildSessionStatus(sessionId, snapshot, creds),
-        connectionType: buildSessionConnectionType(snapshot),
+        connectionType: local?.connectionType ?? buildSessionConnectionType(snapshot),
         lastActivityAt: runtimeState?.updatedAt ?? new Date().toISOString(),
         qrCode: runtimeState?.qrCode ?? snapshot?.qr,
+        pairingCode: runtimeState?.pairingCode ?? snapshot?.pairingCode,
       } satisfies Session;
     }),
   );
@@ -303,10 +333,21 @@ function attachClientRuntime(sessionId: string, client: BerryClientLike): void {
     });
   });
 
+  client.on("auth.pairing_code", (payload) => {
+    const pairingCode = (payload as { code?: string }).code;
+    runtime.sessionState.set(sessionId, {
+      status: "qr_pending",
+      pairingCode,
+      updatedAt: new Date().toISOString(),
+    });
+  });
+
   client.on("connection.open", () => {
     runtime.sessionState.set(sessionId, {
       status: "connected",
       updatedAt: new Date().toISOString(),
+      qrCode: undefined,
+      pairingCode: undefined,
     });
   });
 
@@ -343,13 +384,54 @@ export async function getOrCreateClient(sessionId: string): Promise<BerryClientL
   return client;
 }
 
+export async function createRealSession(input: {
+  id: string;
+  name: string;
+  connectionType: Session["connectionType"];
+  phoneNumber?: string;
+}): Promise<Session> {
+  const localSessions = await readLocalSessions();
+  const normalizedId = input.id.trim();
+  if (!normalizedId) {
+    throw new Error("Informe um identificador de sessao.");
+  }
+
+  if (localSessions.some((session) => session.id === normalizedId)) {
+    throw new Error("Ja existe uma sessao com esse identificador.");
+  }
+
+  localSessions.unshift({
+    id: normalizedId,
+    name: input.name.trim() || normalizedId,
+    connectionType: input.connectionType,
+    phoneNumber: input.phoneNumber?.trim() || undefined,
+    createdAt: new Date().toISOString(),
+  });
+  await writeLocalSessions(localSessions);
+
+  return (await listRealSessions()).find((session) => session.id === normalizedId)!;
+}
+
+async function getLocalSession(sessionId: string): Promise<LocalSessionRecord | undefined> {
+  const localSessions = await readLocalSessions();
+  return localSessions.find((session) => session.id === sessionId);
+}
+
 export async function connectRealSession(sessionId: string): Promise<Session> {
   const client = await getOrCreateClient(sessionId);
+  const local = await getLocalSession(sessionId);
+  if (local?.connectionType === "pairing-code" && !local.phoneNumber?.trim()) {
+    throw new Error("Informe um numero para solicitar pairing code.");
+  }
   runtime.sessionState.set(sessionId, {
     status: "connecting",
     updatedAt: new Date().toISOString(),
   });
-  void client.connectWithQr().catch(() => {
+  const connectPromise =
+    local?.connectionType === "pairing-code"
+      ? client.connectWithPairingCode?.((local.phoneNumber ?? "").replace(/\D/g, ""))
+      : client.connectWithQr();
+  void (connectPromise ?? Promise.reject(new Error("Nao foi possivel iniciar o pareamento."))).catch(() => {
     runtime.sessionState.set(sessionId, {
       status: "disconnected",
       updatedAt: new Date().toISOString(),
