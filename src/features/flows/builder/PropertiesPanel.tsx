@@ -98,7 +98,7 @@ export function PropertiesPanel() {
                 </Select>
               </Field>
               <Field label="tenantId"><Input value={(cfg.tenantId as string) ?? "tnt_default"} onChange={(e) => update(node.id, { tenantId: e.target.value })} /></Field>
-              <Field label="appId"><Input value={(cfg.appId as string) ?? "app_berryflow"} onChange={(e) => update(node.id, { appId: e.target.value })} /></Field>
+              <Field label="appId"><Input value={(cfg.appId as string) ?? "app_berryapi"} onChange={(e) => update(node.id, { appId: e.target.value })} /></Field>
             </>
           )}
 

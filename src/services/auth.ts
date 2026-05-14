@@ -7,36 +7,49 @@ type AuthUserRecord = AppUser & {
 
 async function getUsersFile() {
   const { resolve } = await import("node:path");
-  return resolve(process.cwd(), ".berryflow-data", "users.json");
+  return {
+    primary: resolve(process.cwd(), ".berryapi-data", "users.json"),
+    legacy: resolve(process.cwd(), ".berryflow-data", "users.json"),
+  };
 }
 
 async function ensureUsersFile() {
-  const usersFile = await getUsersFile();
+  const { primary, legacy } = await getUsersFile();
   const [{ mkdir, stat, writeFile }, { dirname }] = await Promise.all([
     import("node:fs/promises"),
     import("node:path"),
   ]);
   try {
-    await stat(usersFile);
+    await stat(primary);
   } catch {
-    await mkdir(dirname(usersFile), { recursive: true });
+    try {
+      await stat(legacy);
+      const { readFile } = await import("node:fs/promises");
+      const content = await readFile(legacy, "utf8");
+      await mkdir(dirname(primary), { recursive: true });
+      await writeFile(primary, content, "utf8");
+      return;
+    } catch {
+      // fall through to seed creation
+    }
+    await mkdir(dirname(primary), { recursive: true });
     const seed: AuthUserRecord[] = [
       {
         id: "usr_admin",
         name: "Berry Admin",
         email: "admin@berrysdk.local",
-        password: "berryflow123",
+        password: "berryapi123",
       },
     ];
-    await writeFile(usersFile, JSON.stringify(seed, null, 2), "utf8");
+    await writeFile(primary, JSON.stringify(seed, null, 2), "utf8");
   }
 }
 
 async function readUsers(): Promise<AuthUserRecord[]> {
-  const usersFile = await getUsersFile();
+  const { primary } = await getUsersFile();
   const { readFile } = await import("node:fs/promises");
   await ensureUsersFile();
-  const content = await readFile(usersFile, "utf8");
+  const content = await readFile(primary, "utf8");
   return JSON.parse(content) as AuthUserRecord[];
 }
 

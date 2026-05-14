@@ -78,11 +78,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "BerryFlow — Visual builder for WhatsApp by BerrySDK" },
-      { name: "description", content: "Monte automações conversacionais e fluxos OTP no WhatsApp com BerryFlow." },
+      { title: "BerryAPI - WhatsApp API platform by BerrySDK" },
+      {
+        name: "description",
+        content:
+          "Gerencie sessoes, OTP, webhooks e automacoes para n8n, Typebot e stacks externas com BerryAPI.",
+      },
       { name: "author", content: "BerrySDK" },
-      { property: "og:title", content: "BerryFlow — Visual builder for WhatsApp" },
-      { property: "og:description", content: "Construtor visual de fluxos para BerryProtocol e BerryOTP." },
+      { property: "og:title", content: "BerryAPI - WhatsApp API platform" },
+      {
+        property: "og:description",
+        content: "Plataforma de API, sessoes, webhooks e automacoes para BerryProtocol e BerryOTP.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },

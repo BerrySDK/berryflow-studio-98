@@ -24,7 +24,7 @@ import type { FlowStatus, FlowType } from "@/types";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/flows/")({
-  head: () => ({ meta: [{ title: "Fluxos - BerryFlow" }] }),
+  head: () => ({ meta: [{ title: "Fluxos - BerryAPI" }] }),
   component: FlowsPage,
 });
 
@@ -84,8 +84,8 @@ function FlowsPage() {
         title="Fluxos"
         description={
           selectedSessionId
-            ? `Gerencie os fluxos conectados a sessao ${selectedSessionId}.`
-            : "Selecione uma sessao para abrir a biblioteca de fluxos."
+            ? `Gerencie as automacoes conectadas a sessao ${selectedSessionId}.`
+            : "Selecione uma sessao para abrir a biblioteca de automacoes."
         }
         actions={
           <Button onClick={() => navigate({ to: "/flows/new" })} className="bg-gradient-primary shadow-glow">
@@ -104,10 +104,10 @@ function FlowsPage() {
               </div>
               <div>
                 <h2 className="text-3xl font-bold tracking-tight text-shimmer">
-                  Fluxos desenhados para operar com BerryProtocol.
+                  Automacoes desenhadas para operar com BerryAPI.
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-                  Explore automacoes, campanhas, rotinas de AI label e jornadas BerryOTP com visual mais refinado.
+                  Explore automacoes, campanhas, webhooks, rotinas de AI label e jornadas BerryOTP para n8n, Typebot e stacks externas.
                 </p>
               </div>
             </div>

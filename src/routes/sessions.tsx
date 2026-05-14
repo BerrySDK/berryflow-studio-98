@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/sessions")({
-  head: () => ({ meta: [{ title: "Sessoes - BerryFlow" }] }),
+  head: () => ({ meta: [{ title: "Sessoes - BerryAPI" }] }),
   component: SessionsPage,
 });
 
@@ -227,7 +227,7 @@ function SessionsPage() {
                   Pareamento bonito, leitura rapida e operacao centralizada.
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-                  Ligue QR, pairing code e reconexao sem sair do studio, com feedback visual mais claro.
+                  Ligue QR, pairing code e reconexao sem sair da plataforma, com feedback visual mais claro.
                 </p>
               </div>
             </div>
@@ -388,7 +388,7 @@ function ConnectionPanel({ session }: { session: Session }) {
               <li>1. Abra o WhatsApp no celular.</li>
               <li>2. Entre em aparelhos conectados.</li>
               <li>3. Escolha conectar usando codigo.</li>
-              <li>4. Digite o codigo exibido pelo BerryFlow.</li>
+              <li>4. Digite o codigo exibido pelo BerryAPI.</li>
             </ol>
           ) : (
             <ol className="mt-3 space-y-2 text-sm text-muted-foreground">

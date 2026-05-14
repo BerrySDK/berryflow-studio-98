@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-const STORAGE_KEY = "berryflow.selected-session";
+const STORAGE_KEY = "berryapi.selected-session";
 
 type SessionContextValue = {
   hydrated: boolean;

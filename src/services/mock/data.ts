@@ -152,11 +152,11 @@ function defaultOtp(label: string) {
     autoReplyOnDenied: true,
     codeLength: 6,
     mask: "•••-•••",
-    texts: { header: `${label} BerryFlow`, body: "Use o código abaixo para continuar.", footer: "Não compartilhe este código." },
+    texts: { header: `${label} BerryAPI`, body: "Use o código abaixo para continuar.", footer: "Não compartilhe este código." },
     buttons: [{ label: "Copiar código", action: "copy" }],
     userIdSource: "phone" as const,
     tenantId: "tnt_default",
-    appId: "app_berryflow",
+    appId: "app_berryapi",
   };
 }
 

@@ -29,7 +29,8 @@ const APP_ROOT = process.cwd();
 const BERRY_PROTOCOL_ROOT = resolve(APP_ROOT, "..", "BerryProtocol");
 const BERRY_PROTOCOL_DB = resolve(BERRY_PROTOCOL_ROOT, "berrysdk.db");
 const BERRY_SESSIONS_DIR = resolve(BERRY_PROTOCOL_ROOT, ".berry-sessions");
-const DATA_DIR = resolve(APP_ROOT, ".berryflow-data");
+const DATA_DIR = resolve(APP_ROOT, ".berryapi-data");
+const LEGACY_DATA_DIR = resolve(APP_ROOT, ".berryflow-data");
 const FLOWS_FILE = resolve(DATA_DIR, "flows.json");
 const EXECUTIONS_FILE = resolve(DATA_DIR, "executions.json");
 const OTP_STATE_FILE = resolve(DATA_DIR, "otp-state.json");
@@ -112,7 +113,7 @@ type LocalSessionRecord = {
 
 declare global {
   // eslint-disable-next-line no-var
-  var __berryflowRuntime:
+  var __berryapiRuntime:
     | {
         clients: Map<string, BerryClientLike>;
         sessionState: Map<string, RuntimeSessionState>;
@@ -121,12 +122,12 @@ declare global {
     | undefined;
 }
 
-const runtime = globalThis.__berryflowRuntime ?? {
+const runtime = globalThis.__berryapiRuntime ?? {
   clients: new Map<string, BerryClientLike>(),
   sessionState: new Map<string, RuntimeSessionState>(),
   otpManagers: new Map<string, ReturnType<NonNullable<BerryOTPModule["BerryOTP"]>["createLoginFlow"]>>(),
 };
-globalThis.__berryflowRuntime = runtime;
+globalThis.__berryapiRuntime = runtime;
 
 async function ensureDir(path: string): Promise<void> {
   await mkdir(path, { recursive: true });
@@ -136,6 +137,15 @@ async function ensureFile<T>(path: string, seed: T): Promise<void> {
   try {
     await stat(path);
   } catch {
+    const legacyPath = path.replace(DATA_DIR, LEGACY_DATA_DIR);
+    try {
+      const legacyContent = await readFile(legacyPath, "utf8");
+      await ensureDir(dirname(path));
+      await writeFile(path, legacyContent, "utf8");
+      return;
+    } catch {
+      // fall back to seed file creation
+    }
     await ensureDir(dirname(path));
     await writeFile(path, JSON.stringify(seed, null, 2), "utf8");
   }

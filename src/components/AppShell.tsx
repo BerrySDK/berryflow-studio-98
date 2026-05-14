@@ -20,10 +20,10 @@ import { useAuth } from "@/features/auth/auth-context";
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/flows", label: "Fluxos", icon: Workflow },
-  { to: "/otp", label: "BerryOTP", icon: KeyRound },
+  { to: "/otp", label: "OTP", icon: KeyRound },
   { to: "/sessions", label: "Sessoes", icon: Smartphone },
   { to: "/templates", label: "Templates", icon: LayoutTemplate },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/settings", label: "Configuracoes", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           <div className="leading-tight">
-            <p className="text-base font-bold tracking-tight text-shimmer">BerryFlow</p>
+            <p className="text-base font-bold tracking-tight text-shimmer">BerryAPI</p>
             <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">by BerrySDK</p>
           </div>
         </div>
@@ -97,7 +97,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Select>
               <p className="text-[11px] text-muted-foreground">
                 {currentSession
-                  ? `${currentSession.connectionType} · ${currentSession.status}`
+                  ? `${currentSession.connectionType} - ${currentSession.status}`
                   : "Nenhuma sessao selecionada"}
               </p>
             </div>

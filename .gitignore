@@ -20,6 +20,7 @@ dist-ssr
 .wrangler/
 .dev.vars
 .berryflow-data/
+.berryapi-data/
 
 # Editor directories and files
 .vscode/*

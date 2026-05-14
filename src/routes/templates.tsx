@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import type { FlowTemplate } from "@/types";
 
 export const Route = createFileRoute("/templates")({
-  head: () => ({ meta: [{ title: "Templates — BerryFlow" }] }),
+  head: () => ({ meta: [{ title: "Templates - BerryAPI" }] }),
   component: TemplatesPage,
 });
 
@@ -38,23 +38,23 @@ function TemplatesPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Templates" description="Galeria de fluxos prontos para começar em segundos." />
-      <div className="p-8 grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {(templates.data ?? []).map(t => (
-          <Card key={t.id} className="p-5 bg-gradient-surface flex flex-col">
+      <PageHeader title="Templates" description="Galeria de automacoes prontas para comecar em segundos." />
+      <div className="grid gap-4 p-8 md:grid-cols-2 xl:grid-cols-3">
+        {(templates.data ?? []).map((t) => (
+          <Card key={t.id} className="flex flex-col bg-gradient-surface p-5">
             <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-md bg-primary/10 ring-1 ring-primary/30 grid place-items-center">
+              <div className="grid h-9 w-9 place-items-center rounded-md bg-primary/10 ring-1 ring-primary/30">
                 <LayoutTemplate className="h-4 w-4 text-primary-glow" />
               </div>
               <p className="font-semibold">{t.name}</p>
               <Badge variant="outline" className="ml-auto text-[10px]">{t.category}</Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">{t.description}</p>
-            <p className="text-[11px] text-muted-foreground mt-2 italic">"{t.preview}"</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t.description}</p>
+            <p className="mt-2 text-[11px] italic text-muted-foreground">"{t.preview}"</p>
             <div className="mt-4 flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">{t.flow.nodes.length} nós</span>
+              <span className="text-[11px] text-muted-foreground">{t.flow.nodes.length} nos</span>
               <Button size="sm" onClick={() => useTpl.mutate(t)} className="bg-gradient-primary shadow-glow">
-                Usar template <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                Usar template <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
             </div>
           </Card>

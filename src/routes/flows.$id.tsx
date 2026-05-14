@@ -27,7 +27,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/flows/$id")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Builder - BerryFlow" }] }),
+  head: () => ({ meta: [{ title: "Editor - BerryAPI" }] }),
   component: FlowBuilderPage,
 });
 
@@ -105,7 +105,7 @@ function FlowBuilderPage() {
   if (!flowState && flow.isLoading) {
     return (
       <div className="grid min-h-screen place-items-center text-muted-foreground">
-        Carregando builder...
+        Carregando editor...
       </div>
     );
   }

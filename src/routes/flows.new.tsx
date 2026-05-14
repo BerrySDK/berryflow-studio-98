@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { useSelectedSession } from "@/features/session/session-context";
 
 export const Route = createFileRoute("/flows/new")({
-  head: () => ({ meta: [{ title: "Novo fluxo — BerryFlow" }] }),
+  head: () => ({ meta: [{ title: "Novo fluxo - BerryAPI" }] }),
   component: NewFlowPage,
 });
 
@@ -43,9 +43,9 @@ function NewFlowPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Novo fluxo" description="Configure a base e abra o builder visual." />
-      <div className="p-8 max-w-2xl">
-        <Card className="p-6 bg-gradient-surface space-y-5">
+      <PageHeader title="Novo fluxo" description="Configure a automacao base e abra o editor operacional." />
+      <div className="max-w-2xl p-8">
+        <Card className="space-y-5 bg-gradient-surface p-6">
           <div className="space-y-1.5">
             <Label>Sessao selecionada</Label>
             <div className="rounded-md border border-border bg-card/50 px-3 py-2 text-sm text-muted-foreground">
@@ -57,15 +57,15 @@ function NewFlowPage() {
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Atendimento inicial" />
           </div>
           <div className="space-y-1.5">
-            <Label>Descrição</Label>
-            <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que esse fluxo faz?" />
+            <Label>Descricao</Label>
+            <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que essa automacao faz?" />
           </div>
           <div className="space-y-1.5">
             <Label>Tipo</Label>
             <Select value={type} onValueChange={(v) => setType(v as FlowType)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="automation">Automação</SelectItem>
+                <SelectItem value="automation">Automacao</SelectItem>
                 <SelectItem value="otp">OTP</SelectItem>
                 <SelectItem value="campaign">Campanha</SelectItem>
                 <SelectItem value="ai">AI</SelectItem>
@@ -79,7 +79,7 @@ function NewFlowPage() {
               disabled={create.isPending || !selectedSessionId}
               className="bg-gradient-primary shadow-glow"
             >
-              {create.isPending ? "Criando…" : "Criar e abrir builder"}
+              {create.isPending ? "Criando..." : "Criar e abrir editor"}
             </Button>
           </div>
         </Card>

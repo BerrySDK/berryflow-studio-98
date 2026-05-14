@@ -13,13 +13,13 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/login")({
   ssr: false,
   component: LoginPage,
-  head: () => ({ meta: [{ title: "Login - BerryFlow" }] }),
+  head: () => ({ meta: [{ title: "Login - BerryAPI" }] }),
 });
 
 function LoginPage() {
   const { hydrated, user, login } = useAuth();
   const [email, setEmail] = useState("admin@berrysdk.local");
-  const [password, setPassword] = useState("berryflow123");
+  const [password, setPassword] = useState("berryapi123");
 
   const auth = useMutation({
     mutationFn: () => authService.login(email, password),
@@ -49,14 +49,15 @@ function LoginPage() {
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-primary-glow">
               <Sparkles className="h-3.5 w-3.5" />
-              BerrySDK Studio
+              BerryAPI Platform
             </div>
             <div className="max-w-2xl space-y-4">
               <h1 className="text-5xl font-bold tracking-tight text-shimmer">
-                Construa jornadas de WhatsApp com cara de produto premium.
+                Opere sua API de WhatsApp com cara de produto premium.
               </h1>
               <p className="max-w-xl text-base leading-7 text-muted-foreground">
-                BerryFlow organiza sessoes, fluxos, AI label e BerryOTP em um unico cockpit visual.
+                BerryAPI organiza sessoes, webhooks, automacoes, AI label e BerryOTP em uma unica
+                plataforma para n8n, Typebot e integracoes externas.
               </p>
             </div>
           </div>
@@ -65,17 +66,17 @@ function LoginPage() {
             <FeaturePill
               icon={Workflow}
               title="Fluxos por sessao"
-              description="Cada ambiente com dashboard, execucao e builder isolados."
+              description="Cada sessao com dashboard, execucao e automacoes isoladas."
             />
             <FeaturePill
               icon={ShieldCheck}
               title="BerryOTP embutido"
-              description="Templates de login e verificacao prontos para virar runtime real."
+              description="OTP pronto para autenticacao, recuperacao de conta e validacao operacional."
             />
             <FeaturePill
               icon={Sparkles}
-              title="UX estilo Magic UI"
-              description="Gradientes, glow e superficies com aparencia de SaaS moderno."
+              title="API pronta para integracoes"
+              description="Webhooks, sessoes e runtime visual para plugar em n8n, Typebot e backends proprios."
             />
           </div>
         </section>
@@ -83,9 +84,9 @@ function LoginPage() {
         <Card className="magic-panel w-full max-w-xl justify-self-center rounded-[2rem] p-8">
           <div className="space-y-2 text-center">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary-glow">BerrySDK</p>
-            <h1 className="text-4xl font-bold tracking-tight text-shimmer">BerryFlow</h1>
+            <h1 className="text-4xl font-bold tracking-tight text-shimmer">BerryAPI</h1>
             <p className="text-sm text-muted-foreground">
-              Entre para gerenciar fluxos, sessoes e OTPs por sessao.
+              Entre para gerenciar sessoes, APIs, automacoes e OTPs por sessao.
             </p>
           </div>
 
@@ -111,14 +112,14 @@ function LoginPage() {
               onClick={() => auth.mutate()}
               disabled={auth.isPending || !email.trim() || !password.trim()}
             >
-              {auth.isPending ? "Entrando..." : "Entrar no studio"}
+              {auth.isPending ? "Entrando..." : "Entrar na plataforma"}
             </Button>
           </div>
 
           <div className="mt-6 rounded-2xl border border-border bg-card/60 p-4 text-xs text-muted-foreground">
             <p className="mb-2 font-medium text-foreground">Acesso inicial</p>
             <p>Email: <span className="font-mono">admin@berrysdk.local</span></p>
-            <p>Senha: <span className="font-mono">berryflow123</span></p>
+            <p>Senha: <span className="font-mono">berryapi123</span></p>
           </div>
         </Card>
       </div>

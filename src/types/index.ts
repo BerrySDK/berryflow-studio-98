@@ -1,4 +1,4 @@
-// Core domain types for BerryFlow.
+// Core domain types for BerryAPI.
 // These are the contracts the UI depends on. Mocks and (future) real
 // adapters must conform to these shapes.
 

@@ -6,7 +6,7 @@ export type AppUser = {
   email: string;
 };
 
-const STORAGE_KEY = "berryflow.auth";
+const STORAGE_KEY = "berryapi.auth";
 
 type AuthContextValue = {
   hydrated: boolean;

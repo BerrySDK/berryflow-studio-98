@@ -43,7 +43,7 @@ import type { Flow, Session } from "@/types";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard - BerryFlow" }] }),
+  head: () => ({ meta: [{ title: "Dashboard - BerryAPI" }] }),
   component: DashboardPage,
 });
 
@@ -214,19 +214,19 @@ function DashboardPage() {
           <div className="grid gap-8 lg:grid-cols-[1.2fr,0.8fr]">
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-xs uppercase tracking-[0.24em] text-primary-glow">
-                BerryStudio command center
+                BerryAPI command center
               </div>
               <div className="space-y-3">
                 <h2 className="text-4xl font-bold tracking-tight text-shimmer">
-                  {selectedSession ? "Operacao da sessao em tempo real." : "Crie uma sessao para comecar a operar."}
+                  {selectedSession ? "Operacao da sessao e da API em tempo real." : "Crie uma sessao para comecar a operar a API."}
                 </h2>
                 <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
-                  Controle o runtime, acompanhe metricas e ligue ou pause fluxos sem sair da dashboard.
+                  Controle runtime, webhooks, OTP e automacoes sem sair da dashboard, com foco em integracoes externas.
                 </p>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <HeroStat label="Sessoes" value={sessions.data?.length ?? "-"} hint="Cadastradas no studio" />
+              <HeroStat label="Sessoes" value={sessions.data?.length ?? "-"} hint="Cadastradas na plataforma" />
               <HeroStat label="Online" value={onlineSessions} hint="Conectadas agora" />
               <HeroStat label="Fluxos ativos" value={activeFlows} hint="Disponiveis para execucao" />
               <HeroStat label="Pausados" value={pausedFlows} hint="Em espera para retomar" />
@@ -376,7 +376,7 @@ function DashboardPage() {
               <div>
                 <h2 className="text-lg font-semibold">Fluxos da sessao</h2>
                 <p className="text-xs text-muted-foreground">
-                  Ative, pause ou arquive sem sair da operacao.
+                  Ative, pause ou arquive as automacoes sem sair da operacao.
                 </p>
               </div>
               <Button variant="ghost" size="sm" asChild>
